@@ -20,8 +20,10 @@ func init() {
 
 func main() {
 	CheckGCCImage()
-	stopCompilerContainer()
-	compilerContainerId := runCompilerContainer()
+	compilerContainerId := switchCompilerContainer()
+	if compilerContainerId == "" {
+		compilerContainerId = runCompilerContainer()
+	}
 	go handleCompileTask(compilerContainerId)
 	go handleRunTask(compilerContainerId)
 

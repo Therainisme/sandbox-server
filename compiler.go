@@ -32,6 +32,21 @@ func stopCompilerContainer() {
 	}
 }
 
+func switchCompilerContainer() (containerId string) {
+	ctx := context.Background()
+	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{})
+	if err != nil {
+		panic(err)
+	}
+
+	for _, container := range containers {
+		if compilerContainerName == (container.Names[0])[1:] {
+			return container.ID
+		}
+	}
+	return ""
+}
+
 func runCompilerContainer() (containerId string) {
 	ctx := context.Background()
 
