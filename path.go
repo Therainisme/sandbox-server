@@ -22,6 +22,10 @@ func getTmpDir() string {
 	if dir == "" {
 		dir = os.Getenv("TMP")
 	}
+	if dir == "" {
+		// wsl need to add "export WSLTEMP='/tmp'" to "~/.profile"
+		dir = os.Getenv("WSLTEMP")
+	}
 	res, _ := filepath.EvalSymlinks(dir)
 	return res
 }
