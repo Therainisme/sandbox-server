@@ -17,7 +17,7 @@ func handleRunTask(compilerContainerId string) {
 		resp, err := cli.ContainerCreate(ctx, &container.Config{
 			Image:      "gcc",
 			WorkingDir: "/workspace",
-			Cmd:        []string{"sh", "-c", "./test" + task.filename},
+			Cmd:        []string{"timeout", "5", "sh", "-c", "./test" + task.filename},
 		}, &container.HostConfig{
 			Mounts: []mount.Mount{
 				{

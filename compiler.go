@@ -70,7 +70,7 @@ func handleCompileTask(compilerContainerId string) {
 			AttachStderr: true,
 			Tty:          true,
 			WorkingDir:   "/workspace",
-			Cmd:          []string{"sh", "-c", "g++ -o test" + task.filename + " " + task.filename + ".cpp"},
+			Cmd:          []string{"timeout", "5", "sh", "-c", "g++ -o test" + task.filename + " " + task.filename + ".cpp"},
 		})
 
 		response, err := cli.ContainerExecAttach(context.Background(), resp.ID, types.ExecStartCheck{})
