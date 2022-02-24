@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/docker/docker/api/types"
@@ -99,4 +100,13 @@ func handleCompileTask(compilerContainerId string) {
 
 		response.Close()
 	}
+}
+
+func IsExistFile(filename string) bool {
+	_, err := os.Stat(filename)
+	if err != nil && os.IsNotExist(err) {
+		return false
+	}
+
+	return true
 }

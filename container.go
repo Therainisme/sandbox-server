@@ -16,7 +16,7 @@ const ExecutorPath = "/com.therainisme/sandbox/executor/"
 
 func handleRunTask(compilerContainerId string) {
 	ctx := context.Background()
-	for task := range runTask {
+	for task := range execTask {
 		resp, err := cli.ContainerCreate(ctx, &container.Config{
 			Image:        "executor:v1",
 			Cmd:          []string{"sh", "-c", fmt.Sprintf("%srun -name %s", ExecutorPath, task.filename)},
