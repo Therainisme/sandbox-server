@@ -1,4 +1,4 @@
-package main
+package sandbox
 
 import (
 	"fmt"
@@ -19,7 +19,11 @@ func init() {
 	cli = client
 }
 
-func main() {
+var CurrentPath = ""
+
+func Run(currentPath string) {
+	CurrentPath = currentPath
+
 	CheckGCCImage()
 	compilerContainerId := switchCompilerContainer()
 	if compilerContainerId == "" {
@@ -39,7 +43,7 @@ func main() {
 			Error: compileResponse.err.String(),
 		}
 
-		if !IsExistFile(filepath.Join(getCurrentAbPath(), "workspace", filename)) {
+		if !IsExistFile(filepath.Join(CurrentPath, "workspace", filename)) {
 			if len(compileResult.Msg) > 0 {
 				fmt.Println(compileResult.Msg)
 			}

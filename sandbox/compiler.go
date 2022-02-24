@@ -1,4 +1,4 @@
-package main
+package sandbox
 
 import (
 	"bytes"
@@ -61,7 +61,7 @@ func runCompilerContainer() (containerId string) {
 		Mounts: []mount.Mount{
 			{
 				Type:   mount.TypeBind,
-				Source: filepath.Join(getCurrentAbPath(), "workspace"),
+				Source: filepath.Join(CurrentPath, "workspace"),
 				Target: "/workspace",
 			},
 		},
