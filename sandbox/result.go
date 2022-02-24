@@ -6,12 +6,13 @@ import (
 	"log"
 )
 
-type Parcel struct {
+// export Task
+type Task struct {
 	Filename string
-	Response chan *DispatchResult
+	Result   chan *TaskResult
 }
 
-type DispatchResult struct {
+type TaskResult struct {
 	CResult *CompileResult `json:"compileResult"`
 	EResult *ExecResult    `json:"execResult"`
 }

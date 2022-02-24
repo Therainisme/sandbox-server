@@ -28,7 +28,7 @@ func wait(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer c.Close()
-	println("wait")
+
 	for {
 		mt, message, err := c.ReadMessage()
 		if err != nil {
@@ -36,7 +36,7 @@ func wait(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		generatorName := GeneratorFilename()
-		f, err := os.OpenFile(
+		f, _ := os.OpenFile(
 			filepath.Join(getCurrentAbPath(), "workspace", generatorName+".cpp"),
 			os.O_RDWR|os.O_CREATE,
 			0666,
@@ -44,12 +44,14 @@ func wait(w http.ResponseWriter, r *http.Request) {
 		f.Write(message)
 		f.Close()
 
-		p := sandbox.Parcel{
+		task := sandbox.Task{
 			Filename: generatorName,
-			Response: make(chan *sandbox.DispatchResult),
+			Result:   make(chan *sandbox.TaskResult),
 		}
-		dispatch <- p
-		res := <-p.Response
+		dispatch <- task
+
+		// wait for sandbox result
+		res := <-task.Result
 		bytes, _ := json.Marshal(res)
 
 		err = c.WriteMessage(mt, bytes)

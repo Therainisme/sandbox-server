@@ -16,7 +16,7 @@ const ExecutorPath = "/com.therainisme/sandbox/executor/"
 
 func handleRunTask(compilerContainerId string) {
 	ctx := context.Background()
-	for task := range execTask {
+	for task := range execTaskList {
 		resp, err := cli.ContainerCreate(ctx, &container.Config{
 			Image:        "executor:v1",
 			Cmd:          []string{"sh", "-c", fmt.Sprintf("%srun -name %s", ExecutorPath, task.filename)},
@@ -31,7 +31,7 @@ func handleRunTask(compilerContainerId string) {
 			Mounts: []mount.Mount{
 				{
 					Type:   mount.TypeBind,
-					Source: filepath.Join(CurrentPath, "workspace"),
+					Source: filepath.Join(mainPath, "workspace"),
 					Target: filepath.Join(ExecutorPath, "workspace"),
 				},
 			},
@@ -61,7 +61,7 @@ func handleRunTask(compilerContainerId string) {
 
 		var taskout, taskerr bytes.Buffer
 		stdcopy.StdCopy(&taskout, &taskerr, out)
-		task.res <- taskResult{taskout, taskerr}
+		task.result <- taskResult{taskout, taskerr}
 		out.Close()
 
 		err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{})

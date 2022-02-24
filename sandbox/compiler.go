@@ -61,7 +61,7 @@ func runCompilerContainer() (containerId string) {
 		Mounts: []mount.Mount{
 			{
 				Type:   mount.TypeBind,
-				Source: filepath.Join(CurrentPath, "workspace"),
+				Source: filepath.Join(mainPath, "workspace"),
 				Target: "/workspace",
 			},
 		},
@@ -79,7 +79,7 @@ func runCompilerContainer() (containerId string) {
 
 func handleCompileTask(compilerContainerId string) {
 	ctx := context.Background()
-	for task := range compileTask {
+	for task := range compileTaskList {
 		resp, _ := cli.ContainerExecCreate(ctx, compilerContainerId, types.ExecConfig{
 			AttachStdin:  true,
 			AttachStdout: true,
@@ -96,7 +96,7 @@ func handleCompileTask(compilerContainerId string) {
 
 		var taskout, taskerr bytes.Buffer
 		stdcopy.StdCopy(&taskout, &taskerr, response.Reader)
-		task.res <- taskResult{taskout, taskerr}
+		task.result <- taskResult{taskout, taskerr}
 
 		response.Close()
 	}

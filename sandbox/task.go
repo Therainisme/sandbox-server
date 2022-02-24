@@ -4,7 +4,7 @@ import "bytes"
 
 type task struct {
 	filename string
-	res      chan taskResult
+	result   chan taskResult
 }
 
 type taskResult struct {
