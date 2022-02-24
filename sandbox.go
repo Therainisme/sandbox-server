@@ -39,5 +39,6 @@ func main() {
 		runTask <- task{filename: filename, res: runMessage}
 		runResult := <-runMessage
 		println("run message:\n" + runResult.out.String())
+		println("err message:\n" + runResult.err.String())
 	}
 }

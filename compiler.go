@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"path/filepath"
 
 	"github.com/docker/docker/api/types"
@@ -50,7 +51,6 @@ func switchCompilerContainer() (containerId string) {
 func runCompilerContainer() (containerId string) {
 	ctx := context.Background()
 
-	// todo pull image
 	// run bash and hang up
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		Image:      "gcc",
@@ -85,7 +85,7 @@ func handleCompileTask(compilerContainerId string) {
 			AttachStderr: true,
 			Tty:          true,
 			WorkingDir:   "/workspace",
-			Cmd:          []string{"timeout", "5", "sh", "-c", "g++ -o test" + task.filename + " " + task.filename + ".cpp"},
+			Cmd:          []string{"timeout", "5", "sh", "-c", fmt.Sprintf("g++ -O2 -static -std=c++11 -fmax-errors=3 -lm -o %s %s.cpp", task.filename, task.filename)},
 		})
 
 		response, err := cli.ContainerExecAttach(context.Background(), resp.ID, types.ExecStartCheck{})

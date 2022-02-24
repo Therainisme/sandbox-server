@@ -1,2 +1,6 @@
 workspace/run.cpp
-testrun
+run
+main_test.go
+scripts
+test.sh
+test

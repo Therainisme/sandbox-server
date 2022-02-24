@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"path/filepath"
 
 	"github.com/docker/docker/api/types"
@@ -11,19 +12,27 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 )
 
+const ExecutorPath = "/com.therainisme/sandbox/executor/"
+
 func handleRunTask(compilerContainerId string) {
 	ctx := context.Background()
 	for task := range runTask {
 		resp, err := cli.ContainerCreate(ctx, &container.Config{
-			Image:      "gcc",
-			WorkingDir: "/workspace",
-			Cmd:        []string{"timeout", "5", "sh", "-c", "./test" + task.filename},
+			Image:        "executor:v1",
+			Cmd:          []string{"sh", "-c", fmt.Sprintf("%srun -name %s", ExecutorPath, task.filename)},
+			AttachStdin:  true,
+			AttachStdout: true,
+			AttachStderr: true,
 		}, &container.HostConfig{
+			Resources: container.Resources{
+				Memory:     64 * 1024 * 1024,
+				MemorySwap: 64 * 1024 * 1024,
+			},
 			Mounts: []mount.Mount{
 				{
 					Type:   mount.TypeBind,
 					Source: filepath.Join(getCurrentAbPath(), "workspace"),
-					Target: "/workspace",
+					Target: filepath.Join(ExecutorPath, "workspace"),
 				},
 			},
 		}, nil, nil, "run-"+task.filename)
@@ -45,7 +54,7 @@ func handleRunTask(compilerContainerId string) {
 		case <-statusCh:
 		}
 
-		out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
+		out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
 		if err != nil {
 			panic(err)
 		}
@@ -59,6 +68,5 @@ func handleRunTask(compilerContainerId string) {
 		if err != nil {
 			panic(err)
 		}
-
 	}
 }
