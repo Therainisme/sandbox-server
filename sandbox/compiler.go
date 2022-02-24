@@ -77,29 +77,33 @@ func runCompilerContainer() (containerId string) {
 	return resp.ID
 }
 
-func handleCompileTask(compilerContainerId string) {
-	ctx := context.Background()
+func listenCompileTaskList(compilerContainerId string) {
 	for task := range compileTaskList {
-		resp, _ := cli.ContainerExecCreate(ctx, compilerContainerId, types.ExecConfig{
-			AttachStdin:  true,
-			AttachStdout: true,
-			AttachStderr: true,
-			Tty:          true,
-			WorkingDir:   "/workspace",
-			Cmd:          []string{"timeout", "5", "sh", "-c", fmt.Sprintf("g++ -O2 -static -std=c++11 -fmax-errors=3 -lm -o %s %s.cpp", task.filename, task.filename)},
-		})
-
-		response, err := cli.ContainerExecAttach(context.Background(), resp.ID, types.ExecStartCheck{})
-		if err != nil {
-			panic(err)
-		}
-
-		var taskout, taskerr bytes.Buffer
-		stdcopy.StdCopy(&taskout, &taskerr, response.Reader)
-		task.result <- taskResult{taskout, taskerr}
-
-		response.Close()
+		go handleCompileTask(task, compilerContainerId)
 	}
+}
+
+func handleCompileTask(task task, compilerContainerId string) {
+	ctx := context.Background()
+	resp, _ := cli.ContainerExecCreate(ctx, compilerContainerId, types.ExecConfig{
+		AttachStdin:  true,
+		AttachStdout: true,
+		AttachStderr: true,
+		Tty:          true,
+		WorkingDir:   "/workspace",
+		Cmd:          []string{"timeout", "5", "sh", "-c", fmt.Sprintf("g++ -O2 -static -std=c++11 -fmax-errors=3 -lm -o %s %s.cpp", task.filename, task.filename)},
+	})
+
+	response, err := cli.ContainerExecAttach(context.Background(), resp.ID, types.ExecStartCheck{})
+	if err != nil {
+		panic(err)
+	}
+
+	var taskout, taskerr bytes.Buffer
+	stdcopy.StdCopy(&taskout, &taskerr, response.Reader)
+	task.result <- taskResult{taskout, taskerr}
+
+	response.Close()
 }
 
 func IsExistFile(filename string) bool {

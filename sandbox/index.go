@@ -20,7 +20,7 @@ func init() {
 	cli = client
 }
 
-func Run(currentPath string, dispatch chan Task) {
+func Run(currentPath string, TaskList chan Task) {
 	mainPath = currentPath
 
 	CheckGCCImage()
@@ -28,15 +28,20 @@ func Run(currentPath string, dispatch chan Task) {
 	if compilerContainerId == "" {
 		compilerContainerId = runCompilerContainer()
 	}
-	go handleCompileTask(compilerContainerId)
-	go handleRunTask(compilerContainerId)
 
-	for parcal := range dispatch {
-		go handleParcel(parcal)
+	go listenCompileTaskList(compilerContainerId)
+	go listenExecTaskList(compilerContainerId)
+
+	go listenSandboxTaskList(TaskList)
+}
+
+func listenSandboxTaskList(taskList chan Task) {
+	for task := range taskList {
+		go handleSandboxTask(task)
 	}
 }
 
-func handleParcel(parcal Task) {
+func handleSandboxTask(parcal Task) {
 	dispathResult := &TaskResult{
 		CResult: &CompileResult{},
 		EResult: &ExecResult{},
