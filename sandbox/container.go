@@ -61,7 +61,7 @@ func handleRunTask(compilerContainerId string) {
 
 		var taskout, taskerr bytes.Buffer
 		stdcopy.StdCopy(&taskout, &taskerr, out)
-		task.res <- result{taskout, taskerr}
+		task.res <- taskResult{taskout, taskerr}
 		out.Close()
 
 		err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{})

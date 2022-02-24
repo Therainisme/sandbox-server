@@ -21,7 +21,7 @@ func init() {
 
 var CurrentPath = ""
 
-func Run(currentPath string) {
+func Run(currentPath string, dispatch chan Parcel) {
 	CurrentPath = currentPath
 
 	CheckGCCImage()
@@ -32,35 +32,44 @@ func Run(currentPath string) {
 	go handleCompileTask(compilerContainerId)
 	go handleRunTask(compilerContainerId)
 
-	for {
-		var filename string
-		fmt.Scanln(&filename)
-		compileMessage := make(chan result)
-		compileTask <- task{filename: filename, res: compileMessage}
+	for parcal := range dispatch {
+		dispathResult := &DispatchResult{
+			CResult: &CompileResult{},
+			EResult: &ExecResult{},
+		}
+
+		compileMessage := make(chan taskResult)
+		compileTask <- task{filename: parcal.Filename, res: compileMessage}
 		compileResponse := <-compileMessage
 		compileResult := &CompileResult{
 			Msg:   compileResponse.out.String(),
 			Error: compileResponse.err.String(),
 		}
 
-		if !IsExistFile(filepath.Join(CurrentPath, "workspace", filename)) {
+		if !IsExistFile(filepath.Join(CurrentPath, "workspace", parcal.Filename)) {
 			if len(compileResult.Msg) > 0 {
 				fmt.Println(compileResult.Msg)
 			}
 			if len(compileResult.Error) > 0 {
 				fmt.Println(compileResult.Error)
 			}
+			dispathResult.CResult = compileResult
+			parcal.Response <- dispathResult
 			continue
 		}
 
-		execMessage := make(chan result)
-		execTask <- task{filename: filename, res: execMessage}
+		execMessage := make(chan taskResult)
+		execTask <- task{filename: parcal.Filename, res: execMessage}
 		execResponse := <-execMessage
 
 		execResult := NewExecResult(execResponse.out.Bytes())
+
 		println(execResult.Memory)
 		println(execResult.UseTime)
 		println(execResult.Output)
 		println(execResult.Error)
+
+		dispathResult.EResult = execResult
+		parcal.Response <- dispathResult
 	}
 }

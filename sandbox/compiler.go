@@ -96,7 +96,7 @@ func handleCompileTask(compilerContainerId string) {
 
 		var taskout, taskerr bytes.Buffer
 		stdcopy.StdCopy(&taskout, &taskerr, response.Reader)
-		task.res <- result{taskout, taskerr}
+		task.res <- taskResult{taskout, taskerr}
 
 		response.Close()
 	}

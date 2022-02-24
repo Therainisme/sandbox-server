@@ -6,6 +6,16 @@ import (
 	"log"
 )
 
+type Parcel struct {
+	Filename string
+	Response chan *DispatchResult
+}
+
+type DispatchResult struct {
+	CResult *CompileResult `json:"compileResult"`
+	EResult *ExecResult    `json:"execResult"`
+}
+
 type ExecResult struct {
 	Memory  int64  `json:"memory"`
 	UseTime int64  `josn:"time"`

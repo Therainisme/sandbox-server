@@ -4,10 +4,10 @@ import "bytes"
 
 type task struct {
 	filename string
-	res      chan result
+	res      chan taskResult
 }
 
-type result struct {
+type taskResult struct {
 	out bytes.Buffer
 	err bytes.Buffer
 }

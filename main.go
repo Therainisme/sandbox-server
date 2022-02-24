@@ -2,6 +2,9 @@ package main
 
 import "sandbox/sandbox"
 
+var dispatch = make(chan sandbox.Parcel, 100)
+
 func main() {
-	sandbox.Run(getCurrentAbPath())
+	go sandbox.Run(getCurrentAbPath(), dispatch)
+	RunWebsocket(7777)
 }
