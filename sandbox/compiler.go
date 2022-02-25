@@ -91,7 +91,7 @@ func handleCompileTask(task task, compilerContainerId string) {
 		AttachStderr: true,
 		Tty:          true,
 		WorkingDir:   "/workspace",
-		Cmd:          []string{"timeout", "5", "sh", "-c", fmt.Sprintf("g++ -O2 -static -std=c++11 -fmax-errors=3 -lm -o %s %s.cpp", task.filename, task.filename)},
+		Cmd:          []string{"timeout", "5", "sh", "-c", fmt.Sprintf("g++ -O2 -fdiagnostics-color=never -std=c++11 -fmax-errors=3 -lm -o %s %s.cpp", task.filename, task.filename)},
 	})
 
 	response, err := cli.ContainerExecAttach(context.Background(), resp.ID, types.ExecStartCheck{})

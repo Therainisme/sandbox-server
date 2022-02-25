@@ -3,6 +3,7 @@ package sandbox
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/docker/docker/client"
 )
@@ -57,8 +58,8 @@ func handleSandboxTask(parcal Task) {
 	// wait for compile result
 	compileResponse := <-compileTask.result
 	compileResult := &CompileResult{
-		Msg:   compileResponse.out.String(),
-		Error: compileResponse.err.String(),
+		Msg:   strings.ReplaceAll(compileResponse.out.String(), parcal.Filename, ""),
+		Error: strings.ReplaceAll(compileResponse.err.String(), parcal.Filename, ""),
 	}
 
 	if !IsExistFile(filepath.Join(mainPath, "workspace", parcal.Filename)) {

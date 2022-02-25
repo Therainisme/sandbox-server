@@ -69,7 +69,7 @@ func RunWebsocket(port int) {
 
 func GeneratorFilename() string {
 	rand.Seed(time.Now().UnixNano())
-	b := make([]byte, 32)
+	b := make([]byte, 8)
 	rand.Read(b)
 	rand_str := hex.EncodeToString(b)
 	return rand_str

@@ -19,7 +19,7 @@ type TaskResult struct {
 
 type ExecResult struct {
 	Memory  int64  `json:"memory"`
-	UseTime int64  `josn:"time"`
+	UseTime int64  `json:"time"`
 	Output  string `json:"output"`
 	Error   error  `json:"error"`
 }
