@@ -65,8 +65,8 @@ func wait(w http.ResponseWriter, r *http.Request) {
 		// wait for sandbox result
 		res := <-task.Result
 		bytes, _ := json.Marshal(res)
-		// os.Remove(tempFilepath)
-		// os.Remove(tempFilepath + ".cpp")
+		os.Remove(tempFilepath)
+		os.Remove(tempFilepath + ".cpp")
 
 		err = c.WriteMessage(mt, bytes)
 		if err != nil {
