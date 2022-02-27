@@ -12,7 +12,7 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 )
 
-const compilerContainerName = "gcc-compiler"
+const compilerContainerName = "sandbox-gcc-compiler"
 
 func switchCompilerContainer() (containerId string) {
 	ctx := context.Background()
@@ -43,12 +43,12 @@ func runCompilerContainer() (containerId string) {
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		Image:      "gcc:9.4.0",
 		WorkingDir: "/workspace",
-		Tty:        true,
+		Cmd:        []string{"sleep", "infinity"},
 	}, &container.HostConfig{
 		Mounts: []mount.Mount{
 			{
 				Type:   mount.TypeBind,
-				Source: *Workspace,
+				Source: GetHostWorkspace(),
 				Target: "/workspace",
 			},
 		},

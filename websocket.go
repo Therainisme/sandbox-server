@@ -45,8 +45,8 @@ func wait(w http.ResponseWriter, r *http.Request) {
 		json.Unmarshal(message, &req)
 
 		generatorName := GeneratorFilename()
-		tempFilepath := filepath.Join(getCurrentAbPath(), "workspace", generatorName)
-		println(tempFilepath)
+		tempFilepath := filepath.Join(sandbox.GetRelativeWorkspace(), generatorName)
+
 		f, _ := os.OpenFile(
 			tempFilepath+".cpp",
 			os.O_RDWR|os.O_CREATE,

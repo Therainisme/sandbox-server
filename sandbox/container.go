@@ -4,15 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/pkg/stdcopy"
 )
-
-const ExecutorPath = "/sandbox-server/executor/"
 
 func listenExecTaskList(compilerContainerId string) {
 	for task := range execTaskList {
@@ -24,7 +21,7 @@ func handleRunTask(task task) {
 	ctx := context.Background()
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		Image:        "therainisme/executor:1.0",
-		Cmd:          []string{"sh", "-c", fmt.Sprintf("%srun -name %s", ExecutorPath, task.filename)},
+		Cmd:          []string{"sh", "-c", fmt.Sprintf("%srun -name %s", GetExecutorPath(), task.filename)},
 		AttachStdin:  true,
 		AttachStdout: true,
 		AttachStderr: true,
@@ -39,8 +36,8 @@ func handleRunTask(task task) {
 		Mounts: []mount.Mount{
 			{
 				Type:   mount.TypeBind,
-				Source: *Workspace,
-				Target: filepath.Join(ExecutorPath, "workspace"),
+				Source: GetHostWorkspace(),
+				Target: GetExecutorWorkspacePath(),
 			},
 		},
 	}, nil, nil, "run-"+task.filename)

@@ -1,7 +1,6 @@
 package sandbox
 
 import (
-	"flag"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -21,12 +20,8 @@ func init() {
 	cli = client
 }
 
-var Workspace = flag.String("workspace", "", "workspace path")
-
 func Run(TaskList chan Task) {
-	println(*Workspace)
-
-	if *Workspace == "" {
+	if *workspace == "" {
 		panic("workspace is empty")
 	}
 
@@ -54,7 +49,6 @@ func handleSandboxTask(parcal Task) {
 	}
 
 	// try to compile
-	fmt.Println(0)
 	compileTask := task{
 		filename: parcal.Filename,
 		result:   make(chan taskResult),
@@ -68,7 +62,7 @@ func handleSandboxTask(parcal Task) {
 		Error: strings.ReplaceAll(compileResponse.err.String(), parcal.Filename, ""),
 	}
 
-	if !IsExistFile(filepath.Join("./", "workspace", parcal.Filename)) {
+	if !IsExistFile(filepath.Join(GetRelativeWorkspace(), parcal.Filename)) {
 		if len(compileResult.Msg) > 0 {
 			fmt.Println(compileResult.Msg)
 		}
