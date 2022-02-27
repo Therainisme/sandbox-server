@@ -78,7 +78,7 @@ func wait(w http.ResponseWriter, r *http.Request) {
 }
 
 func RunWebsocket(port int) {
-	http.HandleFunc("/sandbox", wait)
+	http.HandleFunc("/", wait)
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), nil))
 }
 

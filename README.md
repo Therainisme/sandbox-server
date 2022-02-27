@@ -52,7 +52,7 @@ git clone https://github.com/Therainisme/sandbox-server
 cd sandbox-server
 ```
 
-Select a workspace folder and remember its absolute path
+Select a workspace folder and remember its absolute path.
 
 And then modify the contents of the env file.
 
