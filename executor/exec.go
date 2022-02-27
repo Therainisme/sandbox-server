@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"log"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -39,6 +40,7 @@ func execute(name string) (*bytes.Buffer, *syscall.Rusage, error) {
 	cmd := exec.Command("./workspace/" + name)
 	var output bytes.Buffer
 	cmd.Stdout = &output
+	cmd.Stdin = os.Stdin
 
 	if err := cmd.Start(); err != nil {
 		log.Fatal(err)
