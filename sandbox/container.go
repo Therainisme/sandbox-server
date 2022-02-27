@@ -23,7 +23,7 @@ func listenExecTaskList(compilerContainerId string) {
 func handleRunTask(task task) {
 	ctx := context.Background()
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
-		Image:        "executor:v1",
+		Image:        "therainisme/executor:1.0",
 		Cmd:          []string{"sh", "-c", fmt.Sprintf("%srun -name %s", ExecutorPath, task.filename)},
 		AttachStdin:  true,
 		AttachStdout: true,
