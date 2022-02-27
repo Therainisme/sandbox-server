@@ -1,58 +1,48 @@
 package sandbox
 
-import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"io"
-	"log"
+// const GCCImageTags = "gcc:latest"
 
-	"github.com/docker/docker/api/types"
-)
+// func CheckGCCImage() {
+// 	if !existGCCImage() {
+// 		PullGCCImage()
+// 	}
+// }
 
-const GCCImageTags = "gcc:latest"
+// func existGCCImage() bool {
+// 	ctx := context.Background()
+// 	images, err := cli.ImageList(ctx, types.ImageListOptions{})
+// 	if err != nil {
+// 		panic(err)
+// 	}
 
-func CheckGCCImage() {
-	if !existGCCImage() {
-		PullGCCImage()
-	}
-}
+// 	for _, image := range images {
+// 		if image.RepoTags[0] == GCCImageTags {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
 
-func existGCCImage() bool {
-	ctx := context.Background()
-	images, err := cli.ImageList(ctx, types.ImageListOptions{})
-	if err != nil {
-		panic(err)
-	}
+// type pullStatus struct {
+// 	Status   string `json:"status"`
+// 	Progress string `json:"progress"`
+// }
 
-	for _, image := range images {
-		if image.RepoTags[0] == GCCImageTags {
-			return true
-		}
-	}
-	return false
-}
+// func (s *pullStatus) Write(p []byte) (n int, err error) {
+// 	json.Unmarshal(p, s)
+// 	fmt.Printf(s.Status + ": " + s.Progress + "\r")
+// 	return len(p), nil
+// }
 
-type pullStatus struct {
-	Status   string `json:"status"`
-	Progress string `json:"progress"`
-}
+// func PullGCCImage() {
+// 	log.Printf("pulling gcc image...\n")
+// 	ctx := context.Background()
+// 	reader, err := cli.ImagePull(ctx, GCCImageTags, types.ImagePullOptions{})
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	defer reader.Close()
+// 	var status pullStatus
 
-func (s *pullStatus) Write(p []byte) (n int, err error) {
-	json.Unmarshal(p, s)
-	fmt.Printf(s.Status + ": " + s.Progress + "\r")
-	return len(p), nil
-}
-
-func PullGCCImage() {
-	log.Printf("pulling gcc image...\n")
-	ctx := context.Background()
-	reader, err := cli.ImagePull(ctx, GCCImageTags, types.ImagePullOptions{})
-	if err != nil {
-		panic(err)
-	}
-	defer reader.Close()
-	var status pullStatus
-
-	io.Copy(&status, reader)
-}
+// 	io.Copy(&status, reader)
+// }

@@ -1,4 +1,4 @@
-module sandbox
+module sandbox-server
 
 go 1.17
 

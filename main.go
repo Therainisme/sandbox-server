@@ -1,12 +1,15 @@
 package main
 
 import (
-	"sandbox/sandbox"
+	"flag"
+	"sandbox-server/sandbox"
 )
 
 var dispatch = make(chan sandbox.Task, 100)
 
 func main() {
-	go sandbox.Run(getCurrentAbPath(), dispatch)
+	flag.Parse()
+
+	go sandbox.Run(dispatch)
 	RunWebsocket(7777)
 }

@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -15,35 +14,23 @@ import (
 
 const compilerContainerName = "gcc-compiler"
 
-func stopCompilerContainer() {
-	ctx := context.Background()
-	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{})
-	if err != nil {
-		panic(err)
-	}
-
-	for _, container := range containers {
-		if compilerContainerName == (container.Names[0])[1:] {
-			if err := cli.ContainerStop(ctx, container.ID, nil); err != nil {
-				panic(err)
-			}
-			if err := cli.ContainerRemove(ctx, container.ID, types.ContainerRemoveOptions{}); err != nil {
-				panic(err)
-			}
-		}
-	}
-}
-
 func switchCompilerContainer() (containerId string) {
 	ctx := context.Background()
-	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{})
+	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true})
 	if err != nil {
 		panic(err)
 	}
 
 	for _, container := range containers {
 		if compilerContainerName == (container.Names[0])[1:] {
-			return container.ID
+			if container.State == "exited" {
+				if err := cli.ContainerRemove(ctx, container.ID, types.ContainerRemoveOptions{}); err != nil {
+					panic(err)
+				}
+				return ""
+			} else {
+				return container.ID
+			}
 		}
 	}
 	return ""
@@ -54,14 +41,14 @@ func runCompilerContainer() (containerId string) {
 
 	// run bash and hang up
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
-		Image:      "gcc",
+		Image:      "gcc:9.4.0",
 		WorkingDir: "/workspace",
 		Tty:        true,
 	}, &container.HostConfig{
 		Mounts: []mount.Mount{
 			{
 				Type:   mount.TypeBind,
-				Source: filepath.Join(mainPath, "workspace"),
+				Source: *Workspace,
 				Target: "/workspace",
 			},
 		},

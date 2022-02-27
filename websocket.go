@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sandbox/sandbox"
+	"sandbox-server/sandbox"
 	"strconv"
 	"time"
 
@@ -46,6 +46,7 @@ func wait(w http.ResponseWriter, r *http.Request) {
 
 		generatorName := GeneratorFilename()
 		tempFilepath := filepath.Join(getCurrentAbPath(), "workspace", generatorName)
+		println(tempFilepath)
 		f, _ := os.OpenFile(
 			tempFilepath+".cpp",
 			os.O_RDWR|os.O_CREATE,
@@ -64,8 +65,8 @@ func wait(w http.ResponseWriter, r *http.Request) {
 		// wait for sandbox result
 		res := <-task.Result
 		bytes, _ := json.Marshal(res)
-		os.Remove(tempFilepath)
-		os.Remove(tempFilepath + ".cpp")
+		// os.Remove(tempFilepath)
+		// os.Remove(tempFilepath + ".cpp")
 
 		err = c.WriteMessage(mt, bytes)
 		if err != nil {

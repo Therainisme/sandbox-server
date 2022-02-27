@@ -1,6 +1,7 @@
 package sandbox
 
 import (
+	"flag"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -11,7 +12,6 @@ import (
 var cli *client.Client
 var compileTaskList = make(chan task, 100)
 var execTaskList = make(chan task, 100)
-var mainPath = ""
 
 func init() {
 	client, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -21,10 +21,15 @@ func init() {
 	cli = client
 }
 
-func Run(currentPath string, TaskList chan Task) {
-	mainPath = currentPath
+var Workspace = flag.String("workspace", "", "workspace path")
 
-	CheckGCCImage()
+func Run(TaskList chan Task) {
+	println(*Workspace)
+
+	if *Workspace == "" {
+		panic("workspace is empty")
+	}
+
 	compilerContainerId := switchCompilerContainer()
 	if compilerContainerId == "" {
 		compilerContainerId = runCompilerContainer()
@@ -49,6 +54,7 @@ func handleSandboxTask(parcal Task) {
 	}
 
 	// try to compile
+	fmt.Println(0)
 	compileTask := task{
 		filename: parcal.Filename,
 		result:   make(chan taskResult),
@@ -62,7 +68,7 @@ func handleSandboxTask(parcal Task) {
 		Error: strings.ReplaceAll(compileResponse.err.String(), parcal.Filename, ""),
 	}
 
-	if !IsExistFile(filepath.Join(mainPath, "workspace", parcal.Filename)) {
+	if !IsExistFile(filepath.Join("./", "workspace", parcal.Filename)) {
 		if len(compileResult.Msg) > 0 {
 			fmt.Println(compileResult.Msg)
 		}
@@ -84,6 +90,7 @@ func handleSandboxTask(parcal Task) {
 
 	// wait for exec result
 	execResponse := <-execTask.result
+
 	execResult := NewExecResult(execResponse.out.Bytes())
 
 	println(execResult.Memory)

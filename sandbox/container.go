@@ -12,7 +12,7 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 )
 
-const ExecutorPath = "/com.therainisme/sandbox/executor/"
+const ExecutorPath = "/sandbox-server/executor/"
 
 func listenExecTaskList(compilerContainerId string) {
 	for task := range execTaskList {
@@ -39,7 +39,7 @@ func handleRunTask(task task) {
 		Mounts: []mount.Mount{
 			{
 				Type:   mount.TypeBind,
-				Source: filepath.Join(mainPath, "workspace"),
+				Source: *Workspace,
 				Target: filepath.Join(ExecutorPath, "workspace"),
 			},
 		},

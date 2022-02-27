@@ -1,0 +1,20 @@
+version: '3'
+services:
+  sandbox-gcc-compiler:
+    container_name: sandbox-gcc-compiler
+    image: nginx:1.13
+
+  sandbox-executor:
+    comtainer_name: sandbox-executor
+    image: executor:1.0
+
+  sandbox-server:
+    container_name: sandbox-server
+    image: sandbox-server:1.0
+    ports:
+      - 7777:7777
+    volumes:
+      - ~/workspace/golang/sandbox/workspace:/com.therainisme/sandbox/executor/workspace
+    depends_on:
+      - sandbox-gcc-compiler
+      - sandbox-executor

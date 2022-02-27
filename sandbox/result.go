@@ -2,7 +2,6 @@ package sandbox
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 )
 
@@ -25,16 +24,11 @@ type ExecResult struct {
 	Error   error  `json:"error"`
 }
 
-func (r *ExecResult) print() {
-	result, _ := json.Marshal(r)
-	fmt.Println(string(result))
-}
-
 func NewExecResult(data []byte) *ExecResult {
 	var r ExecResult
 	err := json.Unmarshal(data, &r)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(data, err.Error())
 	}
 	return &r
 }
