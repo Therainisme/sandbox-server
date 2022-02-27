@@ -1,7 +1,7 @@
 package sandbox
 
 import (
-	"fmt"
+	"log"
 	"path/filepath"
 	"strings"
 
@@ -64,10 +64,10 @@ func handleSandboxTask(parcal Task) {
 
 	if !IsExistFile(filepath.Join(GetRelativeWorkspace(), parcal.Filename)) {
 		if len(compileResult.Msg) > 0 {
-			fmt.Println(compileResult.Msg)
+			log.Printf("compile msg: %s\n", compileResult.Msg)
 		}
 		if len(compileResult.Error) > 0 {
-			fmt.Println(compileResult.Error)
+			log.Printf("compile err: %s\n", compileResult.Error)
 		}
 		dispathResult.CResult = compileResult
 		parcal.Result <- dispathResult
@@ -87,10 +87,10 @@ func handleSandboxTask(parcal Task) {
 
 	execResult := NewExecResult(execResponse.out.Bytes())
 
-	println(execResult.Memory)
-	println(execResult.UseTime)
-	println(execResult.Output)
-	println(execResult.Error)
+	log.Printf("memory: %d\n", execResult.Memory)
+	log.Printf("time: %d\n", execResult.UseTime)
+	log.Printf("output: %s\n", execResult.Output)
+	log.Printf("error: %s\n", execResult.Error)
 
 	dispathResult.EResult = execResult
 	parcal.Result <- dispathResult

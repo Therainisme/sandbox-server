@@ -40,6 +40,7 @@ func wait(w http.ResponseWriter, r *http.Request) {
 			log.Println("read err:", err)
 			break
 		}
+		log.Printf("a request from %s\n", c.RemoteAddr())
 
 		var req RunRequest
 		json.Unmarshal(message, &req)
