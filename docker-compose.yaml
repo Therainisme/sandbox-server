@@ -4,14 +4,14 @@ services:
     container_name: sandbox-gcc-compiler
     image: gcc:9.4.0
     volumes:
-      - /home/welljuly/workspace/golang/sandbox/workspace:/workspace
+      - ${workspace}:/workspace
     command: ["sleep","infinity"]
 
   sandbox-executor:
     container_name: sandbox-executor
     image: therainisme/executor:1.0
     volumes:
-      - /home/welljuly/workspace/golang/sandbox/workspace:/sandbox-server/executor/workspace
+      - ${workspace}:/sandbox-server/executor/workspace
 
   sandbox-server:
     container_name: sandbox-server
@@ -19,9 +19,9 @@ services:
     ports:
       - 7777:7777
     volumes:
-      - /home/welljuly/workspace/golang/sandbox/workspace:/sandbox-server/workspace
+      - ${workspace}:/sandbox-server/workspace
       - /var/run:/var/run
-    command: ["sh", "-c", "./start -workspace /home/welljuly/workspace/golang/sandbox/workspace"]
+    command: ["sh", "-c", "./start -workspace ${workspace}"]
     depends_on:
       - sandbox-gcc-compiler
       - sandbox-executor
