@@ -1,10 +1,10 @@
 # sandbox-server
 
-A secure sandbox that can compiles and runs CPP.
+A secure sandbox that can compiles and runs cpp.
 
 ## Live demo
 
-[Demo Site](https://notebook.therainisme.com/experment)
+[Demo Site](https://notebook.therainisme.com/experiment) （Please do not browse other pages, too embarrassing.）
 
 ## Intro
 
