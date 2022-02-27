@@ -77,6 +77,7 @@ func handleSandboxTask(parcal Task) {
 	// try to exec
 	execTask := task{
 		filename: parcal.Filename,
+		stdin:    parcal.Stdin,
 		result:   make(chan taskResult),
 	}
 	execTaskList <- execTask

@@ -1,6 +1,8 @@
 package main
 
-import "sandbox/sandbox"
+import (
+	"sandbox/sandbox"
+)
 
 var dispatch = make(chan sandbox.Task, 100)
 

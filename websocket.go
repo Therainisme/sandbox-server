@@ -21,6 +21,11 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+type RunRequest struct {
+	Code  string `json:"code"`
+	Stdin string `json:"stdin"`
+}
+
 func wait(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -35,17 +40,23 @@ func wait(w http.ResponseWriter, r *http.Request) {
 			log.Println("read err:", err)
 			break
 		}
+
+		var req RunRequest
+		json.Unmarshal(message, &req)
+
 		generatorName := GeneratorFilename()
+		tempFilepath := filepath.Join(getCurrentAbPath(), "workspace", generatorName)
 		f, _ := os.OpenFile(
-			filepath.Join(getCurrentAbPath(), "workspace", generatorName+".cpp"),
+			tempFilepath+".cpp",
 			os.O_RDWR|os.O_CREATE,
 			0666,
 		)
-		f.Write(message)
+		f.Write([]byte(req.Code))
 		f.Close()
 
 		task := sandbox.Task{
 			Filename: generatorName,
+			Stdin:    req.Stdin,
 			Result:   make(chan *sandbox.TaskResult),
 		}
 		dispatch <- task
@@ -53,6 +64,8 @@ func wait(w http.ResponseWriter, r *http.Request) {
 		// wait for sandbox result
 		res := <-task.Result
 		bytes, _ := json.Marshal(res)
+		os.Remove(tempFilepath)
+		os.Remove(tempFilepath + ".cpp")
 
 		err = c.WriteMessage(mt, bytes)
 		if err != nil {

@@ -4,6 +4,7 @@ import "bytes"
 
 type task struct {
 	filename string
+	stdin    string
 	result   chan taskResult
 }
 

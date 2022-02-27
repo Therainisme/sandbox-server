@@ -9,6 +9,7 @@ import (
 // export Task
 type Task struct {
 	Filename string
+	Stdin    string
 	Result   chan *TaskResult
 }
 

@@ -28,6 +28,9 @@ func handleRunTask(task task) {
 		AttachStdin:  true,
 		AttachStdout: true,
 		AttachStderr: true,
+		// StdinOnce:    true,
+		OpenStdin: true,
+		// Tty:          true,
 	}, &container.HostConfig{
 		Resources: container.Resources{
 			Memory:     64 * 1024 * 1024,
@@ -49,6 +52,22 @@ func handleRunTask(task task) {
 		panic(err)
 	}
 
+	waiter, err := cli.ContainerAttach(ctx, resp.ID, types.ContainerAttachOptions{
+		Stderr: true,
+		Stdout: true,
+		Stdin:  true,
+		Stream: true,
+	})
+	if err != nil {
+		panic(err)
+	}
+	defer waiter.Close()
+
+	// redirect stdin, stdout, stderr
+	var taskout, taskerr bytes.Buffer
+	go stdcopy.StdCopy(&taskout, &taskerr, waiter.Reader)
+	waiter.Conn.Write([]byte(task.stdin + "\n"))
+
 	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 
 	select {
@@ -59,15 +78,7 @@ func handleRunTask(task task) {
 	case <-statusCh:
 	}
 
-	out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
-	if err != nil {
-		panic(err)
-	}
-
-	var taskout, taskerr bytes.Buffer
-	stdcopy.StdCopy(&taskout, &taskerr, out)
 	task.result <- taskResult{taskout, taskerr}
-	out.Close()
 
 	err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
