@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -78,18 +79,30 @@ func handleCompileTask(task task, compilerContainerId string) {
 		AttachStderr: true,
 		Tty:          true,
 		WorkingDir:   "/workspace",
-		Cmd:          []string{"timeout", "5", "sh", "-c", fmt.Sprintf("g++ -O2 -fdiagnostics-color=never -std=c++11 -fmax-errors=3 -lm -o %s %s.cpp", task.filename, task.filename)},
+		Cmd:          []string{"sh", "-c", fmt.Sprintf("g++ -O2 -fdiagnostics-color=never -std=c++11 -fmax-errors=3 -lm -o %s %s.cpp", task.filename, task.filename)},
 	})
 
-	response, err := cli.ContainerExecAttach(context.Background(), resp.ID, types.ExecStartCheck{})
+	response, err := cli.ContainerExecAttach(ctx, resp.ID, types.ExecStartCheck{})
 	if err != nil {
 		panic(err)
 	}
 
+	done := make(chan struct{})
+	timeout, cancal := context.WithTimeout(ctx, 5*time.Second)
 	var taskout, taskerr bytes.Buffer
-	stdcopy.StdCopy(&taskout, &taskerr, response.Reader)
-	task.result <- taskResult{taskout, taskerr}
+	go func() {
+		stdcopy.StdCopy(&taskout, &taskerr, response.Reader)
+		close(done)
+		cancal()
+	}()
 
+	select {
+	case <-timeout.Done():
+		taskerr.WriteString(ErrorCompilerTimeLimitExceededError.Error())
+	case <-done:
+	}
+
+	task.result <- taskResult{taskout, taskerr}
 	response.Close()
 }
 
