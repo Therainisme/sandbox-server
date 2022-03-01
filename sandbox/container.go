@@ -3,7 +3,9 @@ package sandbox
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -49,6 +51,9 @@ func handleRunTask(task task) {
 		panic(err)
 	}
 
+	timeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	waiter, err := cli.ContainerAttach(ctx, resp.ID, types.ContainerAttachOptions{
 		Stderr: true,
 		Stdout: true,
@@ -72,12 +77,19 @@ func handleRunTask(task task) {
 		if err != nil {
 			panic(err)
 		}
+	case <-timeout.Done():
+		var execResult ExecResult
+		execResult.Error = ErrorTimeLimitExceeded.Error()
+		dataByte, _ := json.Marshal(&execResult)
+		taskout.WriteString(string(dataByte))
 	case <-statusCh:
 	}
 
 	task.result <- taskResult{taskout, taskerr}
 
-	err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{})
+	err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{
+		Force: true,
+	})
 	if err != nil {
 		panic(err)
 	}

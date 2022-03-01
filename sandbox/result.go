@@ -21,7 +21,7 @@ type ExecResult struct {
 	Memory  int64  `json:"memory"`
 	UseTime int64  `json:"time"`
 	Output  string `json:"output"`
-	Error   error  `json:"error"`
+	Error   string `json:"error"`
 }
 
 func NewExecResult(data []byte) *ExecResult {
@@ -31,7 +31,7 @@ func NewExecResult(data []byte) *ExecResult {
 		log.Printf("%s: %v\n", err.Error(), data)
 		r = ExecResult{
 			Output: "",
-			Error:  ErrorSegmentationFault,
+			Error:  ErrorSegmentationFault.Error(),
 		}
 	}
 	return &r
