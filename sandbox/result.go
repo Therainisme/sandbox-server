@@ -28,7 +28,11 @@ func NewExecResult(data []byte) *ExecResult {
 	var r ExecResult
 	err := json.Unmarshal(data, &r)
 	if err != nil {
-		log.Fatal(data, err.Error())
+		log.Printf("%s: %v\n", err.Error(), data)
+		r = ExecResult{
+			Output: "",
+			Error:  ErrorSegmentationFault,
+		}
 	}
 	return &r
 }

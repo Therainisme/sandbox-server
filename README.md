@@ -8,7 +8,7 @@ A secure sandbox that can compiles and runs cpp.
 
 ## Intro
 
-The server use websocket to communicate on port 7777.
+The server use websocket to communicate at port 7777.
 
 * source code
 
