@@ -25,11 +25,23 @@ func main() {
 		log.Fatal("program name is empty")
 	} else {
 		output, rusage, err := execute(*name)
+		var useTime int64 = 0
+		var memory int64 = 0
+		var errStr = ""
+		if rusage != nil {
+			// kill process haven't rusage
+			useTime = rusage.Utime.Nano() + rusage.Stime.Nano()
+			memory = rusage.Maxrss
+		}
+		if err != nil {
+			errStr = err.Error()
+		}
+
 		result := ExecResult{
-			Memory:  rusage.Maxrss,
-			UseTime: rusage.Utime.Nano() + rusage.Stime.Nano(),
+			Memory:  memory,
+			UseTime: useTime,
 			Output:  output.String(),
-			Error:   err,
+			Error:   errStr,
 		}
 		result.print()
 	}
