@@ -33,7 +33,7 @@ func handleRunTask(task task) {
 		// Tty:          true,
 	}, &container.HostConfig{
 		Resources: container.Resources{
-			Memory: 32 * 1024 * 1024,
+			Memory: 96 * 1024 * 1024,
 		},
 		Mounts: []mount.Mount{
 			{
