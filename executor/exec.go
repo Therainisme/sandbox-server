@@ -3,20 +3,26 @@ package main
 import (
 	"bytes"
 	"flag"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
+
+	"github.com/tklauser/go-sysconf"
 )
 
 var name = flag.String("name", "", "program name")
 
-var timeLimit = flag.Int64("time", 5000, "time limit(millisecond)")
+var timeLimit = flag.Int64("time", 1000, "time limit(millisecond)")
 
 var memoryLimit = flag.Int64("memory", 1024*64, "memory limit(kB)")
+
+var clktck = getClktck()
 
 func main() {
 	flag.Parse()
@@ -59,37 +65,49 @@ func execute(name string) (*bytes.Buffer, *syscall.Rusage, error) {
 	}
 
 	Done := make(chan struct{})
-	MemoryLimitExceeded := make(chan struct{})
-	TimeLimitExceeded := make(chan struct{})
-	SegmentationFault := make(chan struct{})
+	WaitFault := make(chan error)
+	TLE := false
 
 	// trace execute vmpeak
-	go func() {
+	// go func() {
 
-		for {
-			vmPeak, _ := strconv.ParseInt(getVmPeakByPid(cmd.Process.Pid), 10, 64)
-			if vmPeak > *memoryLimit {
-				MemoryLimitExceeded <- struct{}{}
-				break
-			}
-			time.Sleep(time.Millisecond * 300)
-		}
-	}()
+	// 	for {
+	// 		vmPeak, _ := strconv.ParseInt(getVmPeakByPid(cmd.Process.Pid), 10, 64)
+	// 		if vmPeak > *memoryLimit {
+	// 			cmd.Process.Kill()
+	// 			MemoryLimitExceeded <- struct{}{}
+	// 			break
+	// 		}
+	// 		println("vmPeak", vmPeak)
+	// 		time.Sleep(time.Millisecond * 3000)
+	// 	}
+	// }()
 
 	// trace execute time
 	go func() {
 		// ??????
+		time.Sleep(time.Millisecond * time.Duration(*timeLimit) * 2)
+		TLE = true
+		cmd.Process.Kill()
+	}()
+
+	go func() {
 		for {
-			time.Sleep(time.Millisecond * time.Duration(*timeLimit))
-			cmd.Process.Kill()
-			TimeLimitExceeded <- struct{}{}
+			time.Sleep(time.Millisecond * 1)
+			useTime := getUseTime(cmd.Process.Pid)
+			// println("useTime", useTime)
+			if useTime > *timeLimit {
+				TLE = true
+				cmd.Process.Kill()
+				break
+			}
 		}
 	}()
 
 	// wait done
 	go func() {
-		if err := cmd.Wait(); err != nil {
-			SegmentationFault <- struct{}{}
+		if err := cmd.Wait(); err != nil && !TLE {
+			WaitFault <- err
 		} else {
 			Done <- struct{}{}
 		}
@@ -100,19 +118,17 @@ func execute(name string) (*bytes.Buffer, *syscall.Rusage, error) {
 		rusage := cmd.ProcessState.SysUsage().(*syscall.Rusage)
 		realTime := rusage.Utime.Nano() + rusage.Stime.Nano()
 		// "timeLimit" convert to nanoseconds
-		if realTime > *timeLimit*1000000 {
-			return &output, nil, ErrorTimeLimitExceeded
+		if TLE || realTime > *timeLimit*1000000 {
+			return &output, rusage, ErrorTimeLimitExceeded
+		}
+		if rusage.Maxrss > *memoryLimit {
+			return &output, rusage, ErrorMemoryLimitExceeded
 		}
 		return &output, rusage, nil
 
-	case <-MemoryLimitExceeded:
-		return &output, nil, ErrorMemoryLimitExceeded
-
-	case <-TimeLimitExceeded:
-		return &output, nil, ErrorTimeLimitExceeded
-
-	case <-SegmentationFault:
-		return &output, nil, ErrorSegmentationFault
+	case wf := <-WaitFault:
+		rusage := cmd.ProcessState.SysUsage().(*syscall.Rusage)
+		return &output, rusage, wf
 	}
 }
 
@@ -127,8 +143,31 @@ func getVmPeakByPid(id int) string {
 	}
 
 	res := out.String()
-	reg := regexp.MustCompile(`VmPeak:\s+\d+\s+kB`)
+	reg := regexp.MustCompile(`VmHWM:\s+\d+\s+kB`)
 	numbReg := regexp.MustCompile(`\d+`)
 
 	return numbReg.FindString(reg.FindString(res))
+}
+
+func getUseTime(pid int) int64 {
+	f, err := os.Open("/proc/" + strconv.Itoa(pid) + "/stat")
+	if err != nil {
+		return -1
+	}
+	defer f.Close()
+
+	data, _ := ioutil.ReadAll(f)
+	ss := strings.Split(string(data), " ")
+	utime, _ := strconv.ParseInt(ss[13], 10, 64)
+	stime, _ := strconv.ParseInt(ss[14], 10, 64)
+
+	return (utime + stime) * 1000 / clktck
+}
+
+func getClktck() int64 {
+	tk, err := sysconf.Sysconf(sysconf.SC_CLK_TCK)
+	if err != nil {
+		panic(err)
+	}
+	return tk
 }

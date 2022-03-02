@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -32,8 +33,7 @@ func handleRunTask(task task) {
 		// Tty:          true,
 	}, &container.HostConfig{
 		Resources: container.Resources{
-			Memory:     64 * 1024 * 1024,
-			MemorySwap: 64 * 1024 * 1024,
+			Memory: 32 * 1024 * 1024,
 		},
 		Mounts: []mount.Mount{
 			{
@@ -59,16 +59,28 @@ func handleRunTask(task task) {
 		Stdout: true,
 		Stdin:  true,
 		Stream: true,
+		Logs:   true,
 	})
 	if err != nil {
 		panic(err)
 	}
 	defer waiter.Close()
-
 	// redirect stdin, stdout, stderr
 	var taskout, taskerr bytes.Buffer
-	go stdcopy.StdCopy(&taskout, &taskerr, waiter.Reader)
-	waiter.Conn.Write([]byte(task.stdin + "\n"))
+	readerDone := make(chan struct{})
+	go func() {
+		n, err := stdcopy.StdCopy(&taskout, &taskerr, waiter.Reader)
+		if err != nil {
+			log.Printf("read len: %d, stdcopy err: %s\n", n, err.Error())
+		}
+		readerDone <- struct{}{}
+	}()
+	go func() {
+		n, err := waiter.Conn.Write([]byte(task.stdin + "\n"))
+		if err != nil {
+			log.Printf("write len: %d, waiter conn err: %s\n", n, err.Error())
+		}
+	}()
 
 	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 
@@ -82,15 +94,25 @@ func handleRunTask(task task) {
 		execResult.Error = ErrorTimeLimitExceeded.Error()
 		dataByte, _ := json.Marshal(&execResult)
 		taskout.WriteString(string(dataByte))
-	case <-statusCh:
+	case status := <-statusCh:
+		if status.StatusCode != 0 {
+			log.Printf("docker container <id:%s> exit code: %d\n", resp.ID[:12], status.StatusCode)
+			panic("sb")
+		}
+		if status.Error != nil {
+			log.Printf("docker container <id:%s>exit err: %s\n", resp.ID[:12], status.Error.Message)
+		}
 	}
 
 	task.result <- taskResult{taskout, taskerr}
 
-	err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{
-		Force: true,
-	})
-	if err != nil {
-		panic(err)
-	}
+	go func() {
+		<-readerDone
+		err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{
+			Force: true,
+		})
+		if err != nil {
+			panic(err)
+		}
+	}()
 }

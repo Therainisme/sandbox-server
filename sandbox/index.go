@@ -87,10 +87,12 @@ func handleSandboxTask(parcal Task) {
 
 	execResult := NewExecResult(execResponse.out.Bytes())
 
+	log.Printf("--------------------------------\n")
 	log.Printf("memory: %d\n", execResult.Memory)
 	log.Printf("time: %d\n", execResult.UseTime)
 	log.Printf("output: %s\n", execResult.Output)
 	log.Printf("error: %s\n", execResult.Error)
+	log.Printf("================================\n")
 
 	dispathResult.EResult = execResult
 	parcal.Result <- dispathResult

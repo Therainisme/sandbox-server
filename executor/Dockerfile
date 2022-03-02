@@ -1,6 +1,7 @@
 FROM golang:1.17.7
 COPY ./* /sandbox-server/executor/
 WORKDIR /sandbox-server/executor/
+RUN go env -w GOPROXY=https://goproxy.cn
 RUN go build -o run .
 
 FROM ubuntu:20.04
