@@ -9,13 +9,13 @@ services:
 
   sandbox-executor:
     container_name: sandbox-executor
-    image: therainisme/executor:1.0
+    image: therainisme/executor:2.0
     volumes:
       - ${workspace}:/sandbox-server/executor/workspace
 
   sandbox-server:
     container_name: sandbox-server
-    image: therainisme/sandbox-server:1.0
+    image: therainisme/sandbox-server:2.0
     ports:
       - 7777:7777
     volumes:

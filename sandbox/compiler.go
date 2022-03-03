@@ -65,13 +65,7 @@ func runCompilerContainer() (containerId string) {
 	return resp.ID
 }
 
-func listenCompileTaskList(compilerContainerId string) {
-	for task := range compileTaskList {
-		go handleCompileTask(task, compilerContainerId)
-	}
-}
-
-func handleCompileTask(task task, compilerContainerId string) {
+func handleCompileTask(filename string, compilerContainerId string) CompileTaskResult {
 	ctx := context.Background()
 	resp, _ := cli.ContainerExecCreate(ctx, compilerContainerId, types.ExecConfig{
 		AttachStdin:  true,
@@ -79,7 +73,7 @@ func handleCompileTask(task task, compilerContainerId string) {
 		AttachStderr: true,
 		Tty:          true,
 		WorkingDir:   "/workspace",
-		Cmd:          []string{"sh", "-c", fmt.Sprintf("g++ -O2 -fdiagnostics-color=never -std=c++11 -fmax-errors=3 -lm -o %s %s.cpp", task.filename, task.filename)},
+		Cmd:          []string{"sh", "-c", fmt.Sprintf("g++ -O2 -fdiagnostics-color=never -std=c++11 -fmax-errors=3 -lm -o %s %s.cpp", filename, filename)},
 	})
 
 	response, err := cli.ContainerExecAttach(ctx, resp.ID, types.ExecStartCheck{})
@@ -101,9 +95,12 @@ func handleCompileTask(task task, compilerContainerId string) {
 		taskerr.WriteString(ErrorCompilerTimeLimitExceededError.Error())
 	case <-done:
 	}
-
-	task.result <- taskResult{taskout, taskerr}
 	response.Close()
+
+	return CompileTaskResult{
+		Stdout: taskout.String(),
+		Stderr: taskerr.String(),
+	}
 }
 
 func IsExistFile(filename string) bool {

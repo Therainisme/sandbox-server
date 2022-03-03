@@ -156,8 +156,16 @@ func getUseTime(pid int) int64 {
 	}
 	defer f.Close()
 
-	data, _ := ioutil.ReadAll(f)
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		return -1
+	}
+
 	ss := strings.Split(string(data), " ")
+	if len(ss) < 14 {
+		return -1
+	}
+
 	utime, _ := strconv.ParseInt(ss[13], 10, 64)
 	stime, _ := strconv.ParseInt(ss[14], 10, 64)
 

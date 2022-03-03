@@ -3,14 +3,12 @@ package sandbox
 import (
 	"log"
 	"path/filepath"
-	"strings"
 
 	"github.com/docker/docker/client"
 )
 
 var cli *client.Client
-var compileTaskList = make(chan task, 100)
-var execTaskList = make(chan task, 100)
+var compilerContainerId = ""
 
 func init() {
 	client, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -25,14 +23,10 @@ func Run(TaskList chan Task) {
 		panic("workspace is empty")
 	}
 
-	compilerContainerId := switchCompilerContainer()
+	compilerContainerId = switchCompilerContainer()
 	if compilerContainerId == "" {
 		compilerContainerId = runCompilerContainer()
 	}
-
-	go listenCompileTaskList(compilerContainerId)
-	go listenExecTaskList(compilerContainerId)
-
 	go listenSandboxTaskList(TaskList)
 }
 
@@ -43,57 +37,38 @@ func listenSandboxTaskList(taskList chan Task) {
 }
 
 func handleSandboxTask(parcal Task) {
-	dispathResult := &TaskResult{
-		CResult: &CompileResult{},
-		EResult: &ExecResult{},
-	}
 
 	// try to compile
-	compileTask := task{
-		filename: parcal.Filename,
-		result:   make(chan taskResult),
-	}
-	compileTaskList <- compileTask
 
 	// wait for compile result
-	compileResponse := <-compileTask.result
-	compileResult := &CompileResult{
-		Msg:   strings.ReplaceAll(compileResponse.out.String(), parcal.Filename, ""),
-		Error: strings.ReplaceAll(compileResponse.err.String(), parcal.Filename, ""),
-	}
+	compileResult := handleCompileTask(parcal.Filename, compilerContainerId)
 
 	if !IsExistFile(filepath.Join(GetRelativeWorkspace(), parcal.Filename)) {
-		if len(compileResult.Msg) > 0 {
-			log.Printf("compile msg: %s\n", compileResult.Msg)
-		}
-		if len(compileResult.Error) > 0 {
-			log.Printf("compile err: %s\n", compileResult.Error)
-		}
-		dispathResult.CResult = compileResult
-		parcal.Result <- dispathResult
+		println(compileResult.Stdout)
 		return
 	}
 
 	// try to exec
-	execTask := task{
-		filename: parcal.Filename,
-		stdin:    parcal.Stdin,
-		result:   make(chan taskResult),
-	}
-	execTaskList <- execTask
+	execResult := handleRunTask(ExecTask{
+		Filename: parcal.Filename,
+		Stdin:    parcal.Stdin,
+	})
 
 	// wait for exec result
-	execResponse := <-execTask.result
-
-	execResult := NewExecResult(execResponse.out.Bytes())
 
 	log.Printf("--------------------------------\n")
 	log.Printf("memory: %d\n", execResult.Memory)
-	log.Printf("time: %d\n", execResult.UseTime)
+	log.Printf("time: %d\n", execResult.Time)
 	log.Printf("output: %s\n", execResult.Output)
 	log.Printf("error: %s\n", execResult.Error)
 	log.Printf("================================\n")
 
-	dispathResult.EResult = execResult
-	parcal.Result <- dispathResult
+	// dispathResult.EResult = execResult
+	parcal.Result <- &TaskResult{
+		Memory:    execResult.Memory,
+		Time:      execResult.Time,
+		Output:    execResult.Output,
+		Error:     execResult.Error,
+		ErrorType: "",
+	}
 }

@@ -3,8 +3,6 @@ package sandbox
 import (
 	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
 	"log"
 	"time"
 
@@ -14,23 +12,16 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 )
 
-func listenExecTaskList(compilerContainerId string) {
-	for task := range execTaskList {
-		go handleRunTask(task)
-	}
-}
-
-func handleRunTask(task task) {
+func handleRunTask(task ExecTask) ExecTaskResult {
 	ctx := context.Background()
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
-		Image:        "therainisme/executor:1.0",
-		Cmd:          []string{"sh", "-c", fmt.Sprintf("%srun -name %s", GetExecutorPath(), task.filename)},
+		Image:        "ubuntu:20.04",
+		Cmd:          []string{"sh", "-c", "/workspace/" + task.Filename},
 		AttachStdin:  true,
 		AttachStdout: true,
 		AttachStderr: true,
-		// StdinOnce:    true,
-		OpenStdin: true,
-		// Tty:          true,
+		OpenStdin:    true,
+		WorkingDir:   "/workspace/",
 	}, &container.HostConfig{
 		Resources: container.Resources{
 			Memory: 96 * 1024 * 1024,
@@ -39,10 +30,10 @@ func handleRunTask(task task) {
 			{
 				Type:   mount.TypeBind,
 				Source: GetHostWorkspace(),
-				Target: GetExecutorWorkspacePath(),
+				Target: "/workspace/",
 			},
 		},
-	}, nil, nil, "run-"+task.filename)
+	}, nil, nil, "run-"+task.Filename)
 	if err != nil {
 		panic(err)
 	}
@@ -50,6 +41,12 @@ func handleRunTask(task task) {
 	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		panic(err)
 	}
+
+	containerJSON, err := cli.ContainerInspect(ctx, resp.ID)
+	if err != nil {
+		panic(nil)
+	}
+	println(containerJSON.State.Pid)
 
 	timeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -76,7 +73,7 @@ func handleRunTask(task task) {
 		readerDone <- struct{}{}
 	}()
 	go func() {
-		n, err := waiter.Conn.Write([]byte(task.stdin + "\n"))
+		n, err := waiter.Conn.Write([]byte(task.Stdin + "\n"))
 		if err != nil {
 			log.Printf("write len: %d, waiter conn err: %s\n", n, err.Error())
 		}
@@ -84,35 +81,40 @@ func handleRunTask(task task) {
 
 	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 
+	var remove = true
 	select {
 	case err := <-errCh:
 		if err != nil {
 			panic(err)
 		}
 	case <-timeout.Done():
-		var execResult ExecResult
-		execResult.Error = ErrorTimeLimitExceeded.Error()
-		dataByte, _ := json.Marshal(&execResult)
-		taskout.WriteString(string(dataByte))
+		panic("no handle")
 	case status := <-statusCh:
 		if status.StatusCode != 0 {
 			log.Printf("docker container <id:%s> exit code: %d\n", resp.ID[:12], status.StatusCode)
-			panic("sb")
+			remove = false
 		}
 		if status.Error != nil {
 			log.Printf("docker container <id:%s>exit err: %s\n", resp.ID[:12], status.Error.Message)
 		}
 	}
 
-	task.result <- taskResult{taskout, taskerr}
-
 	go func() {
 		<-readerDone
-		err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{
-			Force: true,
-		})
-		if err != nil {
-			panic(err)
+		if remove {
+			err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{
+				Force: true,
+			})
+			if err != nil {
+				panic(err)
+			}
 		}
 	}()
+
+	return ExecTaskResult{
+		Memory: 0,
+		Time:   0,
+		Output: taskout.String(),
+		Error:  taskerr.String(),
+	}
 }

@@ -1,10 +1,5 @@
 package sandbox
 
-import (
-	"encoding/json"
-	"log"
-)
-
 // export Task
 type Task struct {
 	Filename string
@@ -13,31 +8,26 @@ type Task struct {
 }
 
 type TaskResult struct {
-	CResult *CompileResult `json:"compileResult"`
-	EResult *ExecResult    `json:"execResult"`
+	Memory    int64  `json:"memory"`
+	Time      int64  `json:"time"`
+	Output    string `json:"output"`
+	Error     string `json:"error"`
+	ErrorType string `json:"errorType"`
 }
 
-type ExecResult struct {
-	Memory  int64  `json:"memory"`
-	UseTime int64  `json:"time"`
-	Output  string `json:"output"`
-	Error   string `json:"error"`
+type CompileTaskResult struct {
+	Stdout string
+	Stderr string
 }
 
-func NewExecResult(data []byte) *ExecResult {
-	var r ExecResult
-	err := json.Unmarshal(data, &r)
-	if err != nil {
-		log.Printf("%s: %v\n", err.Error(), data)
-		r = ExecResult{
-			Output: "",
-			Error:  ErrorSegmentationFault.Error(),
-		}
-	}
-	return &r
+type ExecTask struct {
+	Filename string
+	Stdin    string
 }
 
-type CompileResult struct {
-	Msg   string `json:"msg"`
-	Error string `json:"error"`
+type ExecTaskResult struct {
+	Memory int64  `json:"memory"`
+	Time   int64  `json:"time"`
+	Output string `json:"output"`
+	Error  string `json:"error"`
 }
