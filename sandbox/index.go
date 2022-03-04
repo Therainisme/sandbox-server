@@ -2,7 +2,6 @@ package sandbox
 
 import (
 	"log"
-	"path/filepath"
 
 	"github.com/docker/docker/client"
 )
@@ -41,10 +40,13 @@ func handleSandboxTask(parcal Task) {
 	// try to compile
 
 	// wait for compile result
-	compileResult := handleCompileTask(parcal.Filename, compilerContainerId)
-
-	if !IsExistFile(filepath.Join(GetRelativeWorkspace(), parcal.Filename)) {
-		println(compileResult.Stdout)
+	compileResult, ok := handleCompileTask(parcal.Filename, compilerContainerId)
+	if !ok {
+		log.Println(compileResult.Stdout)
+		parcal.Result <- &TaskResult{
+			Error:     compileResult.Stdout,
+			ErrorType: CompileErrorType,
+		}
 		return
 	}
 
@@ -63,12 +65,15 @@ func handleSandboxTask(parcal Task) {
 	log.Printf("error: %s\n", execResult.Error)
 	log.Printf("================================\n")
 
-	// dispathResult.EResult = execResult
-	parcal.Result <- &TaskResult{
+	taskResult := &TaskResult{
 		Memory:    execResult.Memory,
 		Time:      execResult.Time,
 		Output:    execResult.Output,
 		Error:     execResult.Error,
 		ErrorType: "",
 	}
+	if execResult.Error != "" {
+		taskResult.ErrorType = ExecErrorType
+	}
+	parcal.Result <- taskResult
 }

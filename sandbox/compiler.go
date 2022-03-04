@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -65,7 +66,7 @@ func runCompilerContainer() (containerId string) {
 	return resp.ID
 }
 
-func handleCompileTask(filename string, compilerContainerId string) CompileTaskResult {
+func handleCompileTask(filename string, compilerContainerId string) (CompileTaskResult, bool) {
 	ctx := context.Background()
 	resp, _ := cli.ContainerExecCreate(ctx, compilerContainerId, types.ExecConfig{
 		AttachStdin:  true,
@@ -80,14 +81,16 @@ func handleCompileTask(filename string, compilerContainerId string) CompileTaskR
 	if err != nil {
 		panic(err)
 	}
+	defer response.Close()
 
 	done := make(chan struct{})
 	timeout, cancal := context.WithTimeout(ctx, 5*time.Second)
+	defer cancal()
+
 	var taskout, taskerr bytes.Buffer
 	go func() {
 		stdcopy.StdCopy(&taskout, &taskerr, response.Reader)
 		close(done)
-		cancal()
 	}()
 
 	select {
@@ -95,12 +98,15 @@ func handleCompileTask(filename string, compilerContainerId string) CompileTaskR
 		taskerr.WriteString(ErrorCompilerTimeLimitExceededError.Error())
 	case <-done:
 	}
-	response.Close()
 
-	return CompileTaskResult{
+	result := CompileTaskResult{
 		Stdout: taskout.String(),
 		Stderr: taskerr.String(),
 	}
+	if !IsExistFile(filepath.Join(GetRelativeWorkspace(), filename)) {
+		return result, false
+	}
+	return result, true
 }
 
 func IsExistFile(filename string) bool {

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sandbox-server/sandbox"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -40,12 +41,12 @@ func wait(w http.ResponseWriter, r *http.Request) {
 			log.Println("read err:", err)
 			break
 		}
-		log.Printf("a request from %s\n", c.RemoteAddr())
+		generatorName := GeneratorFilename()
+		log.Printf("a request for %s\n", generatorName)
 
 		var req RunRequest
 		json.Unmarshal(message, &req)
 
-		generatorName := GeneratorFilename()
 		tempFilepath := filepath.Join(sandbox.GetRelativeWorkspace(), generatorName)
 
 		f, _ := os.OpenFile(
@@ -65,6 +66,9 @@ func wait(w http.ResponseWriter, r *http.Request) {
 
 		// wait for sandbox result
 		res := <-task.Result
+		if res.ErrorType != "" && res.Error != "" {
+			res.Error = strings.ReplaceAll(res.Error, generatorName, "")
+		}
 		bytes, _ := json.Marshal(res)
 		os.Remove(tempFilepath)
 		os.Remove(tempFilepath + ".cpp")

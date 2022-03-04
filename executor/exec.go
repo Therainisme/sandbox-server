@@ -18,7 +18,7 @@ import (
 
 var name = flag.String("name", "", "program name")
 
-var timeLimit = flag.Int64("time", 1000, "time limit(millisecond)")
+var timeLimit = flag.Int64("time", 5000, "time limit(millisecond)")
 
 var memoryLimit = flag.Int64("memory", 1024*64, "memory limit(kB)")
 
@@ -44,10 +44,10 @@ func main() {
 		}
 
 		result := ExecResult{
-			Memory:  memory,
-			UseTime: useTime,
-			Output:  output.String(),
-			Error:   errStr,
+			Memory: memory,
+			Time:   useTime,
+			Output: output.String(),
+			Error:  errStr,
 		}
 		result.print()
 	}
@@ -93,9 +93,8 @@ func execute(name string) (*bytes.Buffer, *syscall.Rusage, error) {
 
 	go func() {
 		for {
-			time.Sleep(time.Millisecond * 1)
+			time.Sleep(time.Nanosecond * 1)
 			useTime := getUseTime(cmd.Process.Pid)
-			// println("useTime", useTime)
 			if useTime > *timeLimit {
 				TLE = true
 				cmd.Process.Kill()
@@ -117,8 +116,8 @@ func execute(name string) (*bytes.Buffer, *syscall.Rusage, error) {
 	case <-Done:
 		rusage := cmd.ProcessState.SysUsage().(*syscall.Rusage)
 		realTime := rusage.Utime.Nano() + rusage.Stime.Nano()
-		// "timeLimit" convert to nanoseconds
-		if TLE || realTime > *timeLimit*1000000 {
+		// "realTime" convert to nanoseconds
+		if TLE || realTime/1000000 > *timeLimit {
 			return &output, rusage, ErrorTimeLimitExceeded
 		}
 		if rusage.Maxrss > *memoryLimit {
