@@ -15,7 +15,7 @@ services:
 
   sandbox-server:
     container_name: sandbox-server
-    image: therainisme/sandbox-server:2.0
+    image: therainisme/sandbox-server:2.1
     ports:
       - 7777:7777
     volumes:
