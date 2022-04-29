@@ -13,7 +13,14 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 )
 
+var executorToken = make(chan struct{}, 10)
+
 func handleRunTask(task ExecTask) ExecTaskResult {
+	executorToken <- struct{}{}
+	defer func() {
+		<-executorToken
+	}()
+
 	ctx := context.Background()
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		Image: "therainisme/executor:2.0",
@@ -88,7 +95,7 @@ func handleRunTask(task ExecTask) ExecTaskResult {
 		}
 
 		var taskout, taskerr bytes.Buffer
-		out, err := cli.ContainerLogs(timeout, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
+		out, err := cli.ContainerLogs(timeout, resp.ID, types.ContainerLogsOptions{ShowStdout: true, Follow: true})
 		if err != nil {
 			panic(err)
 		}

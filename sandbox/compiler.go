@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -13,6 +12,8 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/pkg/stdcopy"
 )
+
+var compilerToken = make(chan struct{}, 1)
 
 const compilerContainerName = "sandbox-gcc-compiler"
 
@@ -67,6 +68,11 @@ func runCompilerContainer() (containerId string) {
 }
 
 func handleCompileTask(filename string, compilerContainerId string) (CompileTaskResult, bool) {
+	compilerToken <- struct{}{}
+	defer func() {
+		<-compilerToken
+	}()
+
 	ctx := context.Background()
 	resp, _ := cli.ContainerExecCreate(ctx, compilerContainerId, types.ExecConfig{
 		AttachStdin:  true,
@@ -84,7 +90,7 @@ func handleCompileTask(filename string, compilerContainerId string) (CompileTask
 	defer response.Close()
 
 	done := make(chan struct{})
-	timeout, cancal := context.WithTimeout(ctx, 5*time.Second)
+	timeout, cancal := context.WithTimeout(ctx, 500*time.Second)
 	defer cancal()
 
 	var taskout, taskerr bytes.Buffer
@@ -103,7 +109,8 @@ func handleCompileTask(filename string, compilerContainerId string) (CompileTask
 		Stdout: taskout.String(),
 		Stderr: taskerr.String(),
 	}
-	if !IsExistFile(filepath.Join(GetRelativeWorkspace(), filename)) {
+	if result.Stderr != "" {
+		fmt.Printf("compiler stderr: %s\n", result.Stderr)
 		return result, false
 	}
 	return result, true
