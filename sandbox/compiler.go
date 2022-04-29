@@ -90,7 +90,7 @@ func handleCompileTask(filename string, compilerContainerId string) (CompileTask
 	defer response.Close()
 
 	done := make(chan struct{})
-	timeout, cancal := context.WithTimeout(ctx, 500*time.Second)
+	timeout, cancal := context.WithTimeout(ctx, 20*time.Second)
 	defer cancal()
 
 	var taskout, taskerr bytes.Buffer
